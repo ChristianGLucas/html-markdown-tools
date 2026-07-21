@@ -1,0 +1,89 @@
+name: christiangeorgelucas/html-markdown-tools
+version: 0.1.0
+language: go
+description: >-
+  Composable Axiom HTML-to-Markdown nodes — convert HTML to configurable
+  Markdown (heading style, bullet/emphasis markers, code fencing, link
+  style, GFM tables/strikethrough/task-lists), strip HTML to plain text, and
+  isolate + convert a page's main article content (Readability-style
+  boilerplate removal) — wrapping the MIT-licensed
+  JohannesKaufmann/html-to-markdown and go-readability (Mozilla Readability
+  port) libraries. The Markdown-conversion counterpart to markdown-tools
+  (which renders Markdown to HTML) and a flow-neighbor of
+  html-tools/html-sanitize-tools: the `html` input field matches their
+  `html` output field, and the `markdown` output field matches
+  markdown-tools' `markdown` input field, so html-sanitize-tools -> this
+  package -> markdown-tools composes with no adapter. Stateless,
+  deterministic for a fixed (html, options) pair, offline — no network
+  fetch is ever made, even for URLs referenced inside the input HTML.
+author: Christian George Lucas
+license: MIT
+tags:
+    - html
+    - markdown
+    - html-to-markdown
+    - readability
+    - text-extraction
+    - conversion
+    - documents
+nodes:
+    - name: ConvertToMarkdown
+      input: ConvertQuery
+      output: ConvertResult
+      description: >-
+        Convert an HTML document or fragment to Markdown using
+        JohannesKaufmann/html-to-markdown, with full control over heading
+        style (ATX/setext), bullet and emphasis markers, code-block fencing,
+        link style (inline/referenced), and GFM table/strikethrough/
+        task-list rendering. Pure string transformation — malformed HTML is
+        parsed permissively (the same tolerant recovery a browser applies)
+        rather than erroring, and no network request is ever made. An
+        unrecognized MarkdownOptions value (e.g. heading_style="foo")
+        returns a structured error instead of silently falling back to a
+        default, unlike the wrapped library's own behavior.
+    - name: StripToPlainText
+      input: PlainTextQuery
+      output: PlainTextResult
+      description: >-
+        Reduce an HTML document or fragment to its visible plain text:
+        every <script>/<style>/<noscript>/<head> subtree is dropped, and
+        every other text node is kept. Block-level elements (<p>, <div>,
+        <li>, <h1>, ...) are separated from surrounding text by a newline
+        so adjacent blocks don't run together; inline elements (<span>,
+        <a>, <strong>, ...) are not. An optional collapse_whitespace flag
+        normalizes all whitespace runs to single spaces and trims the
+        result. This is a pure DOM traversal — unlike
+        ExtractMainContentAsMarkdown, it does not attempt to identify a
+        "main content" region and will include nav/ads/boilerplate text.
+    - name: ExtractMainContentAsMarkdown
+      input: MainContentQuery
+      output: MainContentResult
+      description: >-
+        Isolate the main article content of an HTML page — stripping
+        navigation, ads, sidebars, and other boilerplate — using a Go port
+        of Mozilla's Readability (Firefox Reader Mode) algorithm, then
+        render the isolated content to Markdown through the same engine and
+        options as ConvertToMarkdown. Also returns the page metadata
+        Readability recovers along the way (title, byline, excerpt, site
+        name, lead image, language, published time) and the isolated
+        content as plain text. base_url, if given, is used only to resolve
+        the extracted content's relative links/images to absolute URLs — a
+        pure string join, never a network fetch. extracted=false (with
+        markdown/text_content empty) is the correct, non-error result only
+        for a page with essentially no body content at all; a low-signal
+        page (a bare login form) still typically extracts something and
+        reports extracted=true with a small length.
+    - name: IsReaderable
+      input: ReaderableQuery
+      output: ReaderableResult
+      description: >-
+        Cheaply check whether a page has the shape Readability considers a
+        plausible article — enough text-bearing <p>/<pre>/<article>
+        elements that aren't flagged as unlikely candidates by their
+        class/id — WITHOUT paying for the full extraction
+        ExtractMainContentAsMarkdown does. Useful as a pre-flight gate in a
+        pipeline that only wants to run the heavier extraction on pages
+        likely to have something worth extracting. A true result does not
+        guarantee a great ExtractMainContentAsMarkdown result, and a false
+        result does not guarantee an empty one — this is a fast heuristic,
+        not a preview of the real extraction.

@@ -1,0 +1,200 @@
+// This file defines the data contracts (messages) for your Axiom package.
+// Every node's --input and --output refers to a message defined here.
+//
+// Run `axiom create message <Name>` to scaffold a new message below.
+// Run `axiom generate` to compile these definitions into language bindings in gen/.
+//
+// DOCUMENTATION
+//   Comments written directly above a message or field declaration are extracted
+//   automatically at publish time and shown in the Axiom registry as documentation.
+//   Write your descriptions there — no separate doc files needed.
+//
+//   Leading comment  (no blank line before the declaration) → registry description ✓
+//   Detached comment (blank line before the declaration)    → ignored by registry  ✗
+//
+// This file is yours to edit. Axiom only appends new message blocks — it never
+// overwrites or removes content you have written.
+
+syntax = "proto3";
+
+package christiangeorgelucas.html_markdown_tools;
+
+option go_package = ".;gen";
+
+// Markdown rendering options shared by ConvertToMarkdown and
+// ExtractMainContentAsMarkdown, mirroring JohannesKaufmann/html-to-markdown's
+// own Options struct plus its GitHub-Flavored-Markdown plugin toggles. Every
+// field has a sane default (the zero value maps to the library's own
+// default), so a caller only needs to set the fields they want to override.
+// An unrecognized enum-like string value (e.g. heading_style="foo") returns a
+// structured INVALID_ARGUMENT error rather than being silently ignored.
+message MarkdownOptions {
+  // "atx" (default, `# Heading`) or "setext" (underline-style, `Heading\n===`;
+  // only applies to h1/h2 — h3-h6 always render ATX-style since Markdown has
+  // no setext syntax for them).
+  string heading_style = 1;
+  // The unordered-list bullet character: "-" (default), "+", or "*".
+  string bullet_list_marker = 2;
+  // The italic/emphasis delimiter: "_" (default) or "*".
+  string em_delimiter = 3;
+  // The bold/strong delimiter: "**" (default) or "__".
+  string strong_delimiter = 4;
+  // "fenced" (default, ``` code ```) or "indented" (4-space indented blocks,
+  // the original Markdown.pl style — no language tag is preserved).
+  string code_block_style = 5;
+  // The fence character sequence used when code_block_style is "fenced":
+  // "```" (default) or "~~~". Ignored when code_block_style is "indented".
+  string code_block_fence = 6;
+  // "inline" (default, `[text](url)`) or "referenced" (`[text][1]` with the
+  // URL collected in a reference list at the end of the document).
+  string link_style = 7;
+  // How referenced links are numbered/named, only used when link_style is
+  // "referenced": "full" (default, `[text][1]` / `[1]: url`), "collapsed"
+  // (`[text][]` / `[text]: url`), or "shortcut" (`[text]` / `[text]: url`).
+  string link_reference_style = 8;
+  // GFM pipe tables (`| a | b |`) are rendered by default; set true to fall
+  // back to the plain-text/HTML the base converter would otherwise produce.
+  // (Named "disable_" rather than "enable_" so proto3's false zero-value
+  // gives the more useful default — a caller who never sets this field gets
+  // tables — without needing an `optional` presence-tracked field.)
+  bool disable_tables = 9;
+  // Disable GFM strikethrough (`~~text~~`) for <del>/<s>/<strike>. Default
+  // false (strikethrough rendered).
+  bool disable_strikethrough = 10;
+  // Disable GFM task-list items (`- [ ] todo` / `- [x] done`) for
+  // <input type="checkbox"> list items. Default false (task lists rendered).
+  bool disable_task_lists = 11;
+  // Tag names (lowercase, no angle brackets) to keep as raw HTML in the
+  // output instead of converting them to Markdown syntax, e.g. ["iframe",
+  // "video"] for embeds Markdown has no syntax for.
+  repeated string keep_html_tags = 12;
+  // Tag names (lowercase) to remove entirely — the tag AND its content —
+  // before conversion, e.g. ["nav", "aside", "script", "style"].
+  repeated string remove_html_tags = 13;
+}
+
+// Input for ConvertToMarkdown: an HTML document or fragment plus rendering
+// options. Field name `html` matches html-tools'/html-sanitize-tools' output
+// field of the same name so a flow can wire either package's output directly
+// into this node with no adapter.
+message ConvertQuery {
+  // The HTML document or fragment to convert. Capped at 10 MiB; larger input
+  // returns a structured error rather than being parsed.
+  string html = 1;
+  MarkdownOptions options = 2;
+}
+
+// Output of ConvertToMarkdown. Field name `markdown` matches markdown-tools'
+// MarkdownDoc.markdown input field, so this package's output can feed
+// markdown-tools' nodes with no adapter.
+message ConvertResult {
+  // The rendered Markdown. Empty when `error` is set.
+  string markdown = 1;
+  // Non-empty on error (oversized input or an invalid MarkdownOptions
+  // value); malformed/unparseable HTML does NOT error — the underlying
+  // parser recovers from broken markup the same way a browser does and
+  // returns its best-effort structure.
+  string error = 2;
+}
+
+// Input for StripToPlainText: an HTML document or fragment to reduce to its
+// visible text, independent of Markdown rendering.
+message PlainTextQuery {
+  // The HTML document or fragment to extract text from. Capped at 10 MiB.
+  string html = 1;
+  // When true, runs of whitespace (including newlines from block elements)
+  // are collapsed to single spaces and the result is trimmed. When false,
+  // block-level elements (p, div, li, br, ...) still each start a new line
+  // in the output, but no further whitespace normalization is applied.
+  bool collapse_whitespace = 2;
+}
+
+// Output of StripToPlainText.
+message PlainTextResult {
+  // The visible text, with all markup, <script>, and <style> content
+  // removed. Empty when `error` is set.
+  string text = 1;
+  // Non-empty on error (oversized input); empty on success.
+  string error = 2;
+}
+
+// Input for ExtractMainContentAsMarkdown: an HTML page to run through
+// Readability-style boilerplate removal (nav/ads/sidebars stripped, the
+// primary article isolated), then render the isolated content to Markdown.
+message MainContentQuery {
+  // The full HTML page (not a fragment — Readability needs surrounding
+  // context like <head> metadata and the whole body to score candidates).
+  // Capped at 10 MiB.
+  string html = 1;
+  // Optional base URL used ONLY to resolve the extracted content's relative
+  // links/images/media to absolute URLs — a pure string join against the
+  // parsed HTML, never a network request or fetch of any kind.
+  string base_url = 2;
+  MarkdownOptions options = 3;
+}
+
+// Output of ExtractMainContentAsMarkdown: the isolated article content (as
+// both Markdown and plain text) plus the page metadata Readability recovers
+// along the way. Field name `markdown` matches markdown-tools' MarkdownDoc
+// input field.
+message MainContentResult {
+  // The extracted article content rendered to Markdown via the same engine
+  // and options as ConvertToMarkdown. Empty when extraction found no
+  // article content or `error` is set.
+  string markdown = 1;
+  // The extracted article's plain text (Readability's own text renderer,
+  // independent of the Markdown conversion above).
+  string text_content = 2;
+  // The article title, from <title>/OpenGraph/heading heuristics.
+  string title = 3;
+  // The author/byline, when the page exposes one.
+  string byline = 4;
+  // A short excerpt/summary, from meta description or the first paragraph.
+  string excerpt = 5;
+  // The site name, from OpenGraph/application-name metadata.
+  string site_name = 6;
+  // The article's lead image URL, when found; resolved against base_url if
+  // supplied and relative.
+  string image_url = 7;
+  // The detected document language (from the html lang attribute or meta
+  // tags), e.g. "en". Empty when not declared.
+  string language = 8;
+  // The article's published time in RFC 3339, when the page declares one
+  // (e.g. via article:published_time or a JSON-LD datePublished). Empty
+  // when no timestamp was found — this is normal, not an error.
+  string published_time = 9;
+  // Character length of text_content — a rough reading-length signal.
+  int32 length = 10;
+  // Whether Readability found ANY content node to extract at all. False
+  // only for a page with essentially no body content (e.g. an empty
+  // <body>); a low-signal page (a bare login form, a short notice) still
+  // typically extracts SOMETHING and reports true here with a small
+  // `length` — check `length`, not just `extracted`, to judge whether the
+  // result is substantial. When false, markdown and text_content are
+  // empty, and this is NOT an error.
+  bool extracted = 11;
+  // Non-empty on error (oversized input, unparseable options); empty on
+  // success including the no-article-found case above.
+  string error = 12;
+}
+
+// Input for IsReaderable: a cheap pre-flight check for whether a page is
+// likely to yield useful content from ExtractMainContentAsMarkdown, without
+// paying for the full extraction pass.
+message ReaderableQuery {
+  // The full HTML page to check. Capped at 10 MiB.
+  string html = 1;
+}
+
+// Output of IsReaderable.
+message ReaderableResult {
+  // True when the page has the shape Readability's heuristic considers a
+  // plausible article (enough text-bearing <p>/<pre>/<article> nodes that
+  // aren't flagged as unlikely candidates by class/id). A true here does
+  // not guarantee ExtractMainContentAsMarkdown finds a great result, and a
+  // false does not guarantee it finds nothing — it is a fast heuristic, not
+  // a preview of the real extraction.
+  bool is_readerable = 1;
+  // Non-empty on error (oversized input); empty on success.
+  string error = 2;
+}
