@@ -12,13 +12,15 @@ Built for the Axiom marketplace (handle `christiangeorgelucas`).
 
 This is the Markdown-conversion counterpart to
 [`markdown-tools`](https://github.com/ChristianGLucas/markdown-tools) (which
-renders Markdown to HTML) and a flow-neighbor of
-[`html-tools`](https://github.com/ChristianGLucas/html-tools) /
-[`html-sanitize-tools`](https://github.com/ChristianGLucas/html-sanitize-tools):
-the `html` input field matches their `html` output field, and the `markdown`
-output field matches `markdown-tools`' `markdown` input field, so
-`html-sanitize-tools -> html-markdown-tools -> markdown-tools` composes in a
-flow with no adapter.
+renders Markdown to HTML), and a flow-neighbor of
+[`html-sanitize-tools`](https://github.com/ChristianGLucas/html-sanitize-tools)
+and [`html-tools`](https://github.com/ChristianGLucas/html-tools): the `html`
+input field matches `html-sanitize-tools`' `SanitizeResult.html` output
+field, and the `markdown` output field matches `markdown-tools`' `markdown`
+input field, so `html-sanitize-tools -> html-markdown-tools -> markdown-tools`
+composes in a flow with no adapter. (`html-tools` shares the domain but its
+node outputs are structured extraction results, not a top-level `html`
+string, so wiring from it needs an explicit field selection.)
 
 ## Nodes
 

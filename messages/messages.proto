@@ -53,7 +53,11 @@ message MarkdownOptions {
   // (`[text][]` / `[text]: url`), or "shortcut" (`[text]` / `[text]: url`).
   string link_reference_style = 8;
   // GFM pipe tables (`| a | b |`) are rendered by default; set true to fall
-  // back to the plain-text/HTML the base converter would otherwise produce.
+  // back to the plain converter's default handling of <table>/<tr>/<td>,
+  // which have no CommonMark rule of their own — cell text is emitted with
+  // NO separator at all between cells (e.g. two adjacent <td> cells "a"
+  // and "b" become "ab", not "a b" or "a\tb"), so disabling loses
+  // cell-boundary information entirely, not just the pipe formatting.
   // (Named "disable_" rather than "enable_" so proto3's false zero-value
   // gives the more useful default — a caller who never sets this field gets
   // tables — without needing an `optional` presence-tracked field.)
@@ -74,9 +78,13 @@ message MarkdownOptions {
 }
 
 // Input for ConvertToMarkdown: an HTML document or fragment plus rendering
-// options. Field name `html` matches html-tools'/html-sanitize-tools' output
-// field of the same name so a flow can wire either package's output directly
-// into this node with no adapter.
+// options. Field name `html` matches html-sanitize-tools' SanitizeResult.html
+// output field of the same name, so a flow can wire SanitizeHtml's output
+// directly into this node with no adapter. (html-tools is a domain
+// flow-neighbor too, but its node outputs are structured extraction
+// results — Selection/TextResult/LinksResult/etc — not a top-level `html`
+// string, so wiring from it needs an explicit field selection, not a
+// same-name passthrough.)
 message ConvertQuery {
   // The HTML document or fragment to convert. Capped at 10 MiB; larger input
   // returns a structured error rather than being parsed.
@@ -166,12 +174,14 @@ message MainContentResult {
   // Character length of text_content — a rough reading-length signal.
   int32 length = 10;
   // Whether Readability found ANY content node to extract at all. False
-  // only for a page with essentially no body content (e.g. an empty
-  // <body>); a low-signal page (a bare login form, a short notice) still
-  // typically extracts SOMETHING and reports true here with a small
-  // `length` — check `length`, not just `extracted`, to judge whether the
-  // result is substantial. When false, markdown and text_content are
-  // empty, and this is NOT an error.
+  // only for a page with essentially no TEXT content at all — an empty
+  // <body>, or a page whose only elements carry no text of their own (e.g.
+  // unlabeled form inputs/buttons). A page with even a little real text
+  // (a couple of sentences, a labeled form field) still typically extracts
+  // SOMETHING and reports true here with a small `length` — check
+  // `length`, not just `extracted`, to judge whether the result is
+  // substantial. When false, markdown and text_content are empty, and
+  // this is NOT an error.
   bool extracted = 11;
   // Non-empty on error (oversized input, unparseable options); empty on
   // success including the no-article-found case above.

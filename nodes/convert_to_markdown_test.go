@@ -126,6 +126,13 @@ func TestConvertToMarkdown_DisableTables(t *testing.T) {
 	if strings.Contains(got.Markdown, "|") {
 		t.Errorf("disable_tables=true still produced pipe-table syntax: %q", got.Markdown)
 	}
+	// Documented, verified-exact fallback shape: cells concatenate with NO
+	// separator at all (not even a space) once the table plugin is off —
+	// this is what the disable_tables doc comment now explicitly warns
+	// about, so pin the exact behavior as a regression guard.
+	if got.Markdown != "AB12" {
+		t.Errorf("disable_tables fallback shape changed: got %q, want %q", got.Markdown, "AB12")
+	}
 }
 
 // keep_html_tags must preserve the raw tag verbatim in the output instead

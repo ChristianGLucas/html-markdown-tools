@@ -47,6 +47,21 @@ const notArticleHTML = `<!DOCTYPE html>
 
 const emptyBodyHTML = `<html><body></body></html>`
 
+// unlabeledFormHTML has no text of its own at all — no <label>s, just bare
+// inputs and a button — unlike notArticleHTML above (which has <label>
+// text and so, verified separately, still extracts a small amount of
+// text). This is the fixture for the "no text content at all" carve-out
+// extracted's doc comment describes.
+const unlabeledFormHTML = `<!DOCTYPE html>
+<html><head><title>Login</title></head>
+<body>
+<form>
+<input type="text">
+<input type="password">
+<button>Log in</button>
+</form>
+</body></html>`
+
 // A realistic article page: markdown, metadata, and URL resolution against
 // base_url must all be correct together. Values (title, byline, excerpt,
 // site_name, published_time) are exactly what the HTML fixture's <head>
@@ -128,6 +143,28 @@ func TestExtractMainContentAsMarkdown_EmptyBodyNotExtracted(t *testing.T) {
 	}
 	if got.Markdown != "" || got.TextContent != "" {
 		t.Errorf("expected empty markdown/text_content, got markdown=%q text=%q", got.Markdown, got.TextContent)
+	}
+}
+
+// A page whose only elements carry no text of their own (unlabeled inputs
+// and a button, no prose anywhere) must report extracted=false — this is
+// the precise claim the extracted field's doc comment makes, verified
+// literally rather than assumed. (A form WITH label text, like
+// notArticleHTML used in IsReaderable's tests, is a different case — it
+// still extracts a small amount of text and is not asserted here.)
+func TestExtractMainContentAsMarkdown_UnlabeledFormNotExtracted(t *testing.T) {
+	ctx := context.Background()
+	ax := newTestContext(t)
+
+	got, err := nodes.ExtractMainContentAsMarkdown(ctx, ax, &gen.MainContentQuery{Html: unlabeledFormHTML})
+	if err != nil {
+		t.Fatalf("unexpected transport error: %v", err)
+	}
+	if got.Error != "" {
+		t.Fatalf("unexpected node error: %s", got.Error)
+	}
+	if got.Extracted {
+		t.Errorf("expected extracted=false for a form with no text content of its own, got markdown=%q text=%q", got.Markdown, got.TextContent)
 	}
 }
 

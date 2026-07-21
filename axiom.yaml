@@ -9,11 +9,12 @@ description: >-
   boilerplate removal) — wrapping the MIT-licensed
   JohannesKaufmann/html-to-markdown and go-readability (Mozilla Readability
   port) libraries. The Markdown-conversion counterpart to markdown-tools
-  (which renders Markdown to HTML) and a flow-neighbor of
-  html-tools/html-sanitize-tools: the `html` input field matches their
-  `html` output field, and the `markdown` output field matches
-  markdown-tools' `markdown` input field, so html-sanitize-tools -> this
-  package -> markdown-tools composes with no adapter. Stateless,
+  (which renders Markdown to HTML), and a flow-neighbor of
+  html-sanitize-tools and html-tools: the `html` input field matches
+  html-sanitize-tools' SanitizeResult.html output field, and the
+  `markdown` output field matches markdown-tools' `markdown` input field,
+  so html-sanitize-tools -> this package -> markdown-tools composes with
+  no adapter. Stateless,
   deterministic for a fixed (html, options) pair, offline — no network
   fetch is ever made, even for URLs referenced inside the input HTML.
 author: Christian George Lucas
@@ -69,10 +70,12 @@ nodes:
         content as plain text. base_url, if given, is used only to resolve
         the extracted content's relative links/images to absolute URLs — a
         pure string join, never a network fetch. extracted=false (with
-        markdown/text_content empty) is the correct, non-error result only
-        for a page with essentially no body content at all; a low-signal
-        page (a bare login form) still typically extracts something and
-        reports extracted=true with a small length.
+        markdown/text_content empty) is the correct, non-error result for a
+        page with essentially no TEXT content at all — an empty body, or a
+        page whose only elements carry no text of their own (e.g. unlabeled
+        form inputs/buttons). A page with even a little real text still
+        typically extracts something and reports extracted=true with a
+        small length.
     - name: IsReaderable
       input: ReaderableQuery
       output: ReaderableResult

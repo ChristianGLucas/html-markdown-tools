@@ -24,10 +24,12 @@ import (
 // given, is used only to resolve the extracted content's relative
 // links/images to absolute URLs — a pure string join, never a network
 // fetch. extracted=false (with markdown/text_content empty) is the correct,
-// non-error result only for a page with essentially no body content at all
-// (an empty <body>); a low-signal page (a bare login form) still typically
-// extracts something and reports extracted=true with a small `length` —
-// check `length`, not just `extracted`, to judge substance.
+// non-error result for a page with essentially no TEXT content at all —
+// an empty <body>, or a page whose only elements are things like unlabeled
+// form inputs/buttons that carry no text of their own. A page with even a
+// little real text (a couple of sentences, a labeled form field) still
+// typically extracts something and reports extracted=true with a small
+// `length` — check `length`, not just `extracted`, to judge substance.
 func ExtractMainContentAsMarkdown(ctx context.Context, ax axiom.Context, input *gen.MainContentQuery) (*gen.MainContentResult, error) {
 	if input == nil {
 		return &gen.MainContentResult{Error: "request is required"}, nil
