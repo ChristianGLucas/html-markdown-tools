@@ -1,6 +1,6 @@
 # html-markdown-tools
 
-Composable [Axiom](https://axiom.dev) nodes for HTML-to-Markdown conversion —
+Composable [Axiom](https://axiomide.com) nodes for HTML-to-Markdown conversion —
 render HTML to configurable Markdown, strip HTML to plain text, and isolate +
 convert a page's main article content — wrapping the MIT-licensed
 [JohannesKaufmann/html-to-markdown](https://github.com/JohannesKaufmann/html-to-markdown)
