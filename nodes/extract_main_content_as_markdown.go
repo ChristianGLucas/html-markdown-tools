@@ -34,10 +34,6 @@ func ExtractMainContentAsMarkdown(ctx context.Context, ax axiom.Context, input *
 	if input == nil {
 		return &gen.MainContentResult{Error: "request is required"}, nil
 	}
-	if err := checkHTMLSize(input.Html); err != nil {
-		return &gen.MainContentResult{Error: err.Error()}, nil
-	}
-
 	var pageURL *url.URL
 	if input.BaseUrl != "" {
 		u, err := url.Parse(input.BaseUrl)
@@ -53,7 +49,6 @@ func ExtractMainContentAsMarkdown(ctx context.Context, ax axiom.Context, input *
 	}
 
 	ps := readability.NewParser()
-	ps.MaxElemsToParse = maxReadabilityElems
 
 	article, err := ps.Parse(strings.NewReader(input.Html), pageURL)
 	if err != nil {

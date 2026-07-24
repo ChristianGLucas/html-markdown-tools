@@ -9,29 +9,6 @@ import (
 	gen "christiangeorgelucas/html-markdown-tools/gen"
 )
 
-// maxHTMLBytes bounds the size of any HTML input this package will parse.
-// Enforced on the raw byte length BEFORE any parsing happens, so an
-// oversized payload is rejected cheaply rather than driving a large parse.
-const maxHTMLBytes = 10 * 1024 * 1024 // 10 MiB
-
-// maxTagListLen bounds keep_html_tags/remove_html_tags so a caller can't
-// hand the converter an unbounded rule set.
-const maxTagListLen = 200
-
-// maxReadabilityElems bounds the element count Readability's extraction
-// pass will walk, independent of the maxHTMLBytes byte cap — a deeply
-// nested document (many short tags) can stay under the byte cap while
-// still producing a pathologically large element count.
-const maxReadabilityElems = 200000
-
-// checkHTMLSize returns a structured error when html exceeds maxHTMLBytes.
-func checkHTMLSize(html string) error {
-	if len(html) > maxHTMLBytes {
-		return fmt.Errorf("html exceeds the %d byte limit (got %d bytes)", maxHTMLBytes, len(html))
-	}
-	return nil
-}
-
 // oneOf validates that v is either empty (caller wants this package's
 // default) or exactly one of allowed. Returns a structured error naming the
 // field, the allowed values, and what was actually given otherwise — this is
@@ -91,13 +68,6 @@ func buildConverter(o *gen.MarkdownOptions) (*md.Converter, error) {
 	if err := oneOf("link_reference_style", o.LinkReferenceStyle, "full", "collapsed", "shortcut"); err != nil {
 		return nil, err
 	}
-	if len(o.KeepHtmlTags) > maxTagListLen {
-		return nil, fmt.Errorf("keep_html_tags has %d entries, exceeding the %d limit", len(o.KeepHtmlTags), maxTagListLen)
-	}
-	if len(o.RemoveHtmlTags) > maxTagListLen {
-		return nil, fmt.Errorf("remove_html_tags has %d entries, exceeding the %d limit", len(o.RemoveHtmlTags), maxTagListLen)
-	}
-
 	opts := &md.Options{
 		HeadingStyle:       o.HeadingStyle,
 		BulletListMarker:   o.BulletListMarker,

@@ -20,10 +20,6 @@ func ConvertToMarkdown(ctx context.Context, ax axiom.Context, input *gen.Convert
 	if input == nil {
 		return &gen.ConvertResult{Error: "request is required"}, nil
 	}
-	if err := checkHTMLSize(input.Html); err != nil {
-		return &gen.ConvertResult{Error: err.Error()}, nil
-	}
-
 	conv, err := buildConverter(input.Options)
 	if err != nil {
 		return &gen.ConvertResult{Error: err.Error()}, nil

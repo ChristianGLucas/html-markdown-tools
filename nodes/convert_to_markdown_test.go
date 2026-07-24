@@ -204,18 +204,19 @@ func TestConvertToMarkdown_InvalidOption(t *testing.T) {
 	}
 }
 
-// Oversized input is rejected before any parsing, with a structured error.
-func TestConvertToMarkdown_OversizedInput(t *testing.T) {
+// Input size is the platform's concern, not this node's — a large input
+// must not crash.
+func TestConvertToMarkdown_LargeInputNoCrash(t *testing.T) {
 	ctx := context.Background()
 	ax := newTestContext(t)
 
-	huge := strings.Repeat("a", 10*1024*1024+1)
+	huge := "<p>" + strings.Repeat("a", 10*1024*1024+1) + "</p>"
 	got, err := nodes.ConvertToMarkdown(ctx, ax, &gen.ConvertQuery{Html: huge})
 	if err != nil {
 		t.Fatalf("unexpected transport error: %v", err)
 	}
-	if got.Error == "" {
-		t.Fatalf("expected a size-limit error for %d byte input", len(huge))
+	if got.Error != "" {
+		t.Fatalf("unexpected error for large input: %s", got.Error)
 	}
 }
 

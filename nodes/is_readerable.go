@@ -21,10 +21,6 @@ func IsReaderable(ctx context.Context, ax axiom.Context, input *gen.ReaderableQu
 	if input == nil {
 		return &gen.ReaderableResult{Error: "request is required"}, nil
 	}
-	if err := checkHTMLSize(input.Html); err != nil {
-		return &gen.ReaderableResult{Error: err.Error()}, nil
-	}
-
 	doc, err := html.Parse(strings.NewReader(input.Html))
 	if err != nil {
 		return &gen.ReaderableResult{Error: "parse: " + err.Error()}, nil

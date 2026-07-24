@@ -36,10 +36,6 @@ func StripToPlainText(ctx context.Context, ax axiom.Context, input *gen.PlainTex
 	if input == nil {
 		return &gen.PlainTextResult{Error: "request is required"}, nil
 	}
-	if err := checkHTMLSize(input.Html); err != nil {
-		return &gen.PlainTextResult{Error: err.Error()}, nil
-	}
-
 	doc, err := html.Parse(strings.NewReader(input.Html))
 	if err != nil {
 		return &gen.PlainTextResult{Error: "parse: " + err.Error()}, nil

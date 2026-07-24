@@ -221,17 +221,20 @@ func TestExtractMainContentAsMarkdown_InvalidMarkdownOption(t *testing.T) {
 	}
 }
 
-func TestExtractMainContentAsMarkdown_OversizedInput(t *testing.T) {
+// Input size is the platform's concern, not this node's — a large input
+// must not crash, though it need not extract anything (no article-shaped
+// content in a giant run of plain text).
+func TestExtractMainContentAsMarkdown_LargeInputNoCrash(t *testing.T) {
 	ctx := context.Background()
 	ax := newTestContext(t)
 
-	huge := strings.Repeat("a", 10*1024*1024+1)
+	huge := "<p>" + strings.Repeat("a", 10*1024*1024+1) + "</p>"
 	got, err := nodes.ExtractMainContentAsMarkdown(ctx, ax, &gen.MainContentQuery{Html: huge})
 	if err != nil {
 		t.Fatalf("unexpected transport error: %v", err)
 	}
-	if got.Error == "" {
-		t.Fatalf("expected a size-limit error for %d byte input", len(huge))
+	if got.Error != "" {
+		t.Fatalf("unexpected error for large input: %s", got.Error)
 	}
 }
 
